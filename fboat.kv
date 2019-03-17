@@ -1,0 +1,432 @@
+#:kivy 1.10
+
+
+# MAIN = (0.13671875, 0.53515625, 0.93359375, 1)
+# ACCENT_1 = (1.0, 0.8313725490196079, 0.28627450980392155)
+# ACCENT_2 = (1.0, 0.6745098039215687, 0.5176470588235295)
+# WHITE = "#FFFFFF"
+# DARK_GRAY = (0.3254901960784314, 0.41568627450980394, 0.5098039215686274)
+# LIGHT_GRAY = (0.87109375, 0.90625, 0.921875)
+# BLACK = "#000000"
+
+ScreenManager:
+	# ConnectScreen
+	# JoinScreen
+	# PlacementScreen
+
+
+
+<ConnectScreen>:
+	id: connect_screen
+	canvas:
+		Color:
+			rgb: (0.87109375, 0.90625, 0.921875)
+		Rectangle:
+			size: self.size
+			pos: self.pos
+
+	BoxLayout:
+		padding: [0, 0, 0, connect_screen.height/25]
+		orientation: 'vertical'
+		Label:
+			text: "Fighter Boat"
+			font_size: 200
+			text_size: (connect_screen.width*3/4, connect_screen.height/3)
+			# font_name: ''
+			halign: 'center'
+			color: (0.13671875, 0.53515625, 0.93359375, 1)
+			# size_hint: (None, None)
+
+		GridLayout:
+			size_hint: (None, .4)
+			pos_hint: {'center_x': .5}
+			width: connect_screen.width/3
+			spacing: [0, 30]
+			cols: 2
+			Label:
+				size_hint_y: None
+				pos_hint: {'right': connect_screen.center_x}
+				color: (0.3254901960784314, 0.41568627450980394, 0.5098039215686274, 1)
+				text: "Server Address"
+			TextInput:
+				pos_hint: {'left': connect_screen.center_x}
+				size_hint_y: None
+				padding: [0, self.height/3]
+				color: (0,0,0,0)
+				multiline: False
+
+			Label:
+				pos_hint: {'right': connect_screen.center_x}
+				size_hint_y: None
+				color: (0.3254901960784314, 0.41568627450980394, 0.5098039215686274, 1)
+				text: "Server Port"
+			TextInput:
+				pos_hint: {'left': connect_screen.center_x}
+				size_hint_y: None
+				padding: [0, self.height/3]
+				color: (0, 0, 0, 0)
+				multiline: False
+
+		Button:
+			size_hint: (None, .2)
+			pos_hint: {'center_x': .5, 'center_y': .5}
+			width: connect_screen.width/4
+			text: "Connect"
+
+
+<JoinScreen>:
+	id: join_screen
+	canvas:
+		Color:
+			rgb: (1.0, 0.8313725490196079, 0.28627450980392155)
+		Rectangle:
+			size: self.size
+			pos: self.pos
+
+
+	BoxLayout:
+		padding: [join_screen.width/10, join_screen.height/6, join_screen.width/10, join_screen.height/6]
+		spacing: join_screen.height/20
+		orientation: 'vertical'
+
+		Label:
+			text: "Select Number of Opponents"
+			font_size: 75
+			background_color: (0, 0, 0, 1)
+
+		BoxLayout:
+			spacing: join_screen.width/20
+			Button:
+				text: '1'
+				font_size: 80
+				background_color: (0, 0, 0, 1)
+				background_normal: ''
+				# size_hint_x: .1
+			Button:
+				text: '2'
+				font_size: 80
+				background_color: (1, 0, 0, 1)
+				background_normal: ''
+				# size_hint_x: .1
+
+			Button:
+				text: '3'
+				font_size: 80
+				background_color: (0, 0, 1, 1)
+				background_normal: ''
+				# size_hint_x: .1
+			Button:
+				text: '4'
+				font_size: 80
+				background_color: (1, 0, 1, 1)
+				background_normal: ''
+				# size_hint_x: .1
+
+		Label:
+			# padding: [0, join_screen.height/10, 0, 0]
+			text: "We currently have x of y players. Please wait..."
+			font_size: 40
+			color: (0.3254901960784314, 0.41568627450980394, 0.5098039215686274, 0)
+			background_color: (0, 0, 0, 0)
+
+
+<PlacementScreen>:
+	id: placement_screen
+	canvas:
+		Color:
+			rgb: (0.87109375, 0.90625, 0.921875)
+		Rectangle:
+			size: self.size
+			pos: self.pos
+	BoxLayout:
+		orientation: 'vertical'
+		padding: [placement_screen.width/10, placement_screen.height/40, placement_screen.width/10, placement_screen.height/20]
+		spacing: placement_screen.height/25
+		Button:
+			text: 'Place your ships'
+			height: placement_screen.height/8
+			font_size: 75
+			size_hint_y: .15
+
+		BoxLayout:
+			size_hint_y: .7
+
+			FbBoard:
+				size_hint_x: .7
+
+			BoxLayout:
+				size_hint_x: .1
+				orientation: 'vertical'
+
+				Button:
+					size_hint_y: 1/9
+					background_normal: ''
+					background_color: (.7, .3, .5, 0)
+
+				BoxLayout:
+					orientation: 'vertical'
+					spacing: placement_screen.height/20
+					size_hint_y: 8/9
+					BoatButton:
+						text: 'Place 2 Boat'
+
+					BoatButton:
+						text: 'Place 3 Boat'
+
+					BoatButton:
+						text: 'Place 3 Boat'
+
+					BoatButton:
+						text: 'Place 4 Boat'
+
+					BoatButton:
+						text: 'Place 5 Boat'
+		BoxLayout:
+			size_hint_y: .1
+			spacing: self.width/15
+
+			Button:
+				# size_hint_x: .1
+				text: 'Placing boat vertically, click to place horizontally'
+				size_hint_x: .75
+				background_normal: ''
+				background_color: (.7, .3, .5, 1)
+
+			Button:
+				text: 'Ready to play'
+				size_hint_x: .25
+				background_normal: ''
+				background_color: (.7, .3, .5, 1)
+
+
+<BoatButton@Button>:
+	background_normal: ''
+	background_color: (.5, .7, .3, 1)
+	text_size: self.width, None
+	halign: 'center'
+
+
+<FbBoard>:
+	id: board
+	BoxLayout:
+		orientation: 'vertical'
+		padding: [board.width/10, 0]
+		spacing: 2
+		FbBoardRow:
+			Button:
+				background_normal: ''
+				background_color: (0, 0, 0, 0)
+			BoardLabel:
+				text: 'A'
+			BoardLabel:
+				text: 'B'
+			BoardLabel:
+				text: 'C'
+			BoardLabel:
+				text: 'D'
+			BoardLabel:
+				text: 'E'
+			BoardLabel:
+				text: 'F'
+			BoardLabel:
+				text: 'G'
+			BoardLabel:
+				text: 'H'
+		FbBoardRow:
+			BoardLabel:
+				text: '1'
+			FbBoardSpace:
+				id: 'Space00'
+			FbBoardSpace:
+				id: 'Space10'
+			FbBoardSpace:
+				id: 'Space20'
+			FbBoardSpace:
+				id: 'Space30'
+			FbBoardSpace:
+				id: 'Space40'
+			FbBoardSpace:
+				id: 'Space50'
+			FbBoardSpace:
+				id: 'Space60'
+			FbBoardSpace:
+				id: 'Space70'
+		FbBoardRow:
+			BoardLabel:
+				text: '2'
+			FbBoardSpace:
+				id: 'Space01'
+			FbBoardSpace:
+				id: 'Space11'
+			FbBoardSpace:
+				id: 'Space21'
+			FbBoardSpace:
+				id: 'Space31'
+			FbBoardSpace:
+				id: 'Space41'
+			FbBoardSpace:
+				id: 'Space51'
+			FbBoardSpace:
+				id: 'Space61'
+			FbBoardSpace:
+				id: 'Space71'
+		FbBoardRow:
+			BoardLabel:
+				text: '3'
+			FbBoardSpace:
+				id: 'Space02'
+			FbBoardSpace:
+				id: 'Space12'
+			FbBoardSpace:
+				id: 'Space22'
+			FbBoardSpace:
+				id: 'Space32'
+			FbBoardSpace:
+				id: 'Space42'
+			FbBoardSpace:
+				id: 'Space52'
+			FbBoardSpace:
+				id: 'Space62'
+			FbBoardSpace:
+				id: 'Space72'
+		FbBoardRow:
+			BoardLabel:
+				text: '4'
+			FbBoardSpace:
+				id: 'Space03'
+			FbBoardSpace:
+				id: 'Space13'
+			FbBoardSpace:
+				id: 'Space23'
+			FbBoardSpace:
+				id: 'Space33'
+			FbBoardSpace:
+				id: 'Space43'
+			FbBoardSpace:
+				id: 'Space53'
+			FbBoardSpace:
+				id: 'Space63'
+			FbBoardSpace:
+				id: 'Space73'
+		FbBoardRow:
+			BoardLabel:
+				text: '5'
+			FbBoardSpace:
+				id: 'Space04'
+			FbBoardSpace:
+				id: 'Space14'
+			FbBoardSpace:
+				id: 'Space24'
+			FbBoardSpace:
+				id: 'Space34'
+			FbBoardSpace:
+				id: 'Space44'
+			FbBoardSpace:
+				id: 'Space54'
+			FbBoardSpace:
+				id: 'Space64'
+			FbBoardSpace:
+				id: 'Space74'
+		FbBoardRow:
+			BoardLabel:
+				text: '6'
+			FbBoardSpace:
+				id: 'Space05'
+			FbBoardSpace:
+				id: 'Space15'
+			FbBoardSpace:
+				id: 'Space25'
+			FbBoardSpace:
+				id: 'Space35'
+			FbBoardSpace:
+				id: 'Space45'
+			FbBoardSpace:
+				id: 'Space55'
+			FbBoardSpace:
+				id: 'Space65'
+			FbBoardSpace:
+				id: 'Space75'
+		FbBoardRow:
+			BoardLabel:
+				text: '7'
+			FbBoardSpace:
+				id: 'Space06'
+			FbBoardSpace:
+				id: 'Space16'
+			FbBoardSpace:
+				id: 'Space26'
+			FbBoardSpace:
+				id: 'Space36'
+			FbBoardSpace:
+				id: 'Space46'
+			FbBoardSpace:
+				id: 'Space56'
+			FbBoardSpace:
+				id: 'Space66'
+			FbBoardSpace:
+				id: 'Space76'
+		FbBoardRow:
+			BoardLabel:
+				text: '8'
+			FbBoardSpace:
+				id: 'Space07'
+			FbBoardSpace:
+				id: 'Space17'
+			FbBoardSpace:
+				id: 'Space27'
+			FbBoardSpace:
+				id: 'Space37'
+			FbBoardSpace:
+				id: 'Space47'
+			FbBoardSpace:
+				id: 'Space57'
+			FbBoardSpace:
+				id: 'Space67'
+			FbBoardSpace:
+				id: 'Space77'
+
+
+<FbBoardSpace@Button>:
+	background_normal: ''
+	background_color: (.7, .7, .7, 1)
+
+
+<BoardLabel@Label>:
+	color: (0, 0, 0, 1)
+
+
+<FbBoardRow@BoxLayout>:
+	orientation: 'horizontal'
+	spacing: 2
+
+
+
+
+# <PlayScreen>:
+# 	BoxLayout:
+
+
+# ScreenManager:
+# 	MenuScreen:
+# 	SettingsScreen:
+
+
+# <MenuScreen>:
+# 	id: 'menu'
+#     BoxLayout:
+#         Button:
+#             text: 'Goto settings'
+#             on_press: root.manager.current = 'settings'
+#         Button:
+#             text: 'Quit'
+
+# <SettingsScreen>:
+# 	id: "settings"
+#     BoxLayout:
+#         Button:
+#             text: 'My settings button'
+#         Button:
+#             text: 'Back to menu'
+#             on_press: root.manager.current = 'menu'
+
+
