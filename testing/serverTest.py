@@ -1,4 +1,4 @@
-# Figherboat Testing
+# Figherboat Server Testing
 
 
 import unittest
@@ -11,10 +11,7 @@ from gameServer import *
 
 SERVER_SOCKET = 1738
 
-# class TestClientMethods(unittest.TestCase):
-
-
-# Helper Functions
+# Helper Function
 def encode_msg(array):
 	return list(map(lambda x: x.encode(), array))
 
@@ -272,10 +269,6 @@ class TestServerMethods(unittest.TestCase):
 		print(self.player.board.plot)
 
 
-
-
-
-
 	# def test_quit_msg(self):
 
 
@@ -289,15 +282,6 @@ class TestServerMethods(unittest.TestCase):
 	# def tearDown(self):
 		# self.conn.close()
 
-
-# class TestCommunication(unittest.TestCase):
-
-		# def mock_recv(*args, **kwargs):
-		# 	if args[0] == 4:
-		# 		return "NAME".encode()
-		# 	elif args[0] == 20:
-		# 		return "{: >20}".format("Ted").encode()
-		# self.mock_sock.recv.side_effect = mock_recv
 
 
 if __name__ == "__main__":

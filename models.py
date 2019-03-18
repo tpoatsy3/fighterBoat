@@ -15,25 +15,35 @@ LEN_BOARD_SIZE = 2
 
 
 class Transmitter:
+	""" Contians methods that help with socket transactions
+
+		Parameters:
+			socket - from socket library """
 
 	def __init__(self, socket):
 		self.socket = socket
 
+
 	def send_msg(self, msg):
+		"""sends encoded message(msg) over socket connection"""
 		self.socket.send(msg.encode())
 
 	def str_with_buffer(self, content, length, fill):
+		"""Returns inputted content to a string of a certain length
+		Any additional space in the returned string is filled by 'fill' character"""
 		return "{:{fill}>{length}}".format(content, fill=fill, length=length)
 
 	def recv_int(self, byteLen):
+		"""Reads from socket and returns the integer value"""
 		return int(self.socket.recv(byteLen).decode())
 
 	def recv_str(self, byteLen):
+		"""Reads from socket and returns a decoded string"""
 		return self.socket.recv(byteLen).decode().lstrip(' ')
 
 
 class GameManager:
-	""" docstring """
+	""" Organizes instances of game class for server """
 
 	def __init__(self):
 		self.gameCounter = 0
@@ -44,24 +54,33 @@ class GameManager:
 		self.gameDict = {}
 
 	def join_open_game(self, desPlayers, player):
-		""" returns  """
+		""" Adds 'player' to a game with 'desPlayers' number of players
+		returns the game instance that the player was added to
+
+		Params:
+		desPlayer-int- number of desired players wanted in the game
+		player-Player- data structure associated with requesting user"""
 
 		game = None
 
+		# return game of X players
 		if self.waitingGames[desPlayers - self.minPlayers] == None:
+			# if one doesnt exist, create and return it
 			game = self.create_new_game(desPlayers)
 
 		else:
+			# Otherwise,
 			game = self.waitingGames[desPlayers - self.minPlayers]
 
+		# Add player to game
 		game.add_player(player)
 
-		# Does game has number of desired players?
+		# Start game if it has enough players to play
 		if len(game.players) == game.numPlayers:
 			self.waitingGames[desPlayers - self.minPlayers] = None
 			game.start_game()
 
-		# Else, update waiting details
+		# Else, update waiting information
 		else:
 			# Set player status to waiting
 			player.set_status("waiting")
@@ -76,8 +95,10 @@ class GameManager:
 
 		return game
 
-	def create_new_game(self, numPlayers):
 
+
+	def create_new_game(self, numPlayers):
+		"""Returns a new Game instance with 'numPlayers' players"""
 
 		# Create new gameId and increment for next use (gamecounter must remain a )
 		newId = self.gameCounter
@@ -92,20 +113,22 @@ class GameManager:
 
 		return game
 
+	# Getter methods
 	def get_game(self, gameId):
 		return self.gameDict.get(gameId)
 
 
-# Game
 class Game:
-	"""id - integer - the unique id number for the game, registered in game manager's dictionary
-	numPlayers -  integer - total number of players at the game's start
-	boardSize - integer - number of spaces in both the x and y directions
-	 """
+	"""Class that provides the framework and structure for play"""
 
 	def __init__(self, id, numPlayers, boardSize=8):
-		# Create new game
+		"""Params:
+		id - integer - the unique id number for the game, registered in game manager's dictionary
+		numPlayers -  integer - total number of players at the game's start
+		boardSize - integer - number of spaces in both the x and y directions
+		 """
 
+		# Game information
 		self.numPlayers = numPlayers
 		self.origPlayers = numPlayers
 		self.id = id
@@ -122,17 +145,21 @@ class Game:
 		# Number of digits that coordinates are given in
 		self.coordLen = int(math.log(self.boardSize, 10)) + 1
 
+		# Turn indicators
 		self.turn = 0
 		self.turnList = None
 
 
 	def add_player(self, player):
+		"""Add player to game"""
 		self.players[player.get_port()] = player
 		player.set_game_id(self.id)
 		player.send_game_notification()
 
 
 	def player_quit(self, port):
+		"""Process a user's request to quit in a game"""
+
 		player = self.players.pop(port)
 		board = self.boards.pop(port)
 
@@ -155,11 +182,10 @@ class Game:
 				if len(self.players) == 1:
 					oppPlayer.send_victory_notification()
 
-	def get_boat_length(self, id):
-		return self.boatLengths[int(id)]
-
 
 	def start_game(self):
+		"""Set up game environment/variables needed for play"""
+
 		self.status = "active"
 
 		self.turnArray = shuffle(list(self.players))
@@ -193,29 +219,32 @@ class Game:
 			player.set_status("settingBoard")
 
 	def process_shot(self, shooterId, targetId, loc):
-		#TODO: Check turn first
+		"""Process a shot taken in a game and return outcome"""
+
+		#TODO: Add logic to check turn first
 
 		target = self.players[targetId]
 		boatId = None
 		outcome = target.recieve_shot(loc)
 
-		if outcome == 2:
+		if outcome == SINK:
 			boatId = target.get_boat_id(loc)
 
-		elif outcome == 3:
+		elif outcome == ELIMINATED:
 			self.numPlayers -= 1
 			if self.numPlayers == 1:
-				outcome = 4
+				outcome = WON
 
 		for i in self.players:
 			cur_player = self.players[i]
 			cur_player.send_shot_msg(shooterId, targetId, loc, outcome, boatId)
 
 	def remove_player(self):
-		# Define from player_quit then add to process shot
+		# TODO: Define from player_quit then add to process shot
 		pass
 
 	def advance_turn(self):
+		"""Advance turn to next active player"""
 		while True:
 			self.turn = (self.turn + 1) % self.origPlayers
 			player = self.turnArray[self.turn]
@@ -223,6 +252,11 @@ class Game:
 				break
 
 		player.send_turn_notification()
+
+
+	# Getters
+	def get_boat_length(self, id):
+		return self.boatLengths[int(id)]
 
 
 class Player(Transmitter):
@@ -249,37 +283,6 @@ class Player(Transmitter):
 		# Game Information
 		self.boardSize = 8
 
-	def set_name(self, name):
-		self.name = name
-
-	def set_status(self, status):
-		self.status = status
-
-	def set_up_game(self, dim, ships):
-		self.boardSize = dim
-		self.board = Board(dim)
-		self.boatArray = deepcopy(ships)
-		self.boatHealth = [None] * len(self.boatArray)
-		self.liveBoats = len(ships) - 1
-
-	def set_game_id(self, gameId):
-		self.gameId = gameId
-
-	def get_name(self):
-		return self.name
-
-	def get_game_id(self):
-		return self.gameId
-
-	def get_port(self):
-		return self.id
-
-	def get_boat_id(self, loc):
-		return self.board.check_space(*loc)%10
-
-	def get_status(self):
-		return self.status
-
 	def place_boat(self, boatId, coords):
 		""" Sets the location of one of the player's boats)
 		boatId - which boat is being set
@@ -304,6 +307,8 @@ class Player(Transmitter):
 			self.status = "ready"
 
 	def recieve_shot(self, loc):
+		"""Process shot targeted at player and return the outcome"""
+
 		print("Recieve Shot: {}, port: {}".format(loc, self.id))
 		print(self.liveBoats)
 		result = self.board.check_space(*loc)
@@ -341,10 +346,7 @@ class Player(Transmitter):
 					return ELIMINATED
 
 	def send_play_msg(self, boardSize, opps):
-		# FORMAT
-		# msg - 4, game - 3
-		# boardSize - 2, #ofOpps - 1
-		# port - 5 and name - 20 of each opponent
+		""" Sends a 'PLAY' message to players containing game and opponent information"""
 
 		msg = "PLAY"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
@@ -363,7 +365,10 @@ class Player(Transmitter):
 
 
 	def send_sail_msg(self, coordLen, boats):
-		# Send SAIL message to each player
+		"""Send SAIL message to each player indicating that they should place their
+		boats on the board"""
+
+
 		msg = "SAIL"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 
@@ -377,6 +382,9 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_shot_msg(self, shooter, target, loc, outcome, boatId):
+		"""Send SHOT message indiciating who shot whom and the result to each of
+		the players in the game"""
+
 		msg = "SHOT"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 		shootr = self.str_with_buffer(shooter, 5, 0)
@@ -394,8 +402,8 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 
-
 	def send_elim_msg(self):
+		"""Send LOSE message indicating that the receiving player has been eliminated"""
 		msg = "LOSE"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 
@@ -403,6 +411,7 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_game_notification(self):
+		"""Send GAME message indiciating the gameId for the game they joined"""
 		msg = "GAME"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 
@@ -410,6 +419,7 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_turn_notification(self):
+		"""Send URMV message indiciating that it's the recieving player's move"""
 		msg = "URMV"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 
@@ -418,6 +428,9 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_waiting_message(self, curPlayerCount, tarPlayerCount):
+		"""Send WAIT message indicating that a game is building and has 'curPlayerCount'
+		 of the required 'tarPlayerCount' players needed to begin"""
+
 		msg = "WAIT"
 		gameId = self.str_with_buffer(self.gameId, LEN_GAME, 0)
 		cur = self.str_with_buffer(curPlayerCount, 1, 0)
@@ -428,6 +441,8 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_quit_notification(self, port):
+		"""Send LEFT message indiciating that another player has quit the game"""
+
 		msg = "LEFT"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
 
@@ -438,6 +453,7 @@ class Player(Transmitter):
 		self.send_msg(outMsg)
 
 	def send_victory_notification(self):
+		"""Anncounce that the receiving player has won"""
 		msg = "WIN!"
 		gameId = self.str_with_buffer(self.gameId, 3,0)
 
@@ -445,20 +461,56 @@ class Player(Transmitter):
 
 		self.send_msg(outMsg)
 
+	def set_up_game(self, dim, ships):
+		"""Sets up the game information for the game
+		dim-int- how wide a the board is
+		ships-int array- how many and what style of boats are in the game"""
+
+		self.boardSize = dim
+		self.board = Board(dim)
+		self.boatArray = deepcopy(ships)
+		self.boatHealth = [None] * len(self.boatArray)
+		self.liveBoats = len(ships) - 1
+
 
 	def quit_game(self):
+		"""Reset game information after player has quit"""
 		self.status = None
 		self.board = None
 		self.gameId = None
 		self.boatHealth = None
 		self.boardSize = None
 
+	# Getters and setters
+	def set_name(self, name):
+		self.name = name
+
+	def set_status(self, status):
+		self.status = status
+
+	def set_game_id(self, gameId):
+		self.gameId = gameId
+
+	def get_name(self):
+		return self.name
+
+	def get_game_id(self):
+		return self.gameId
+
+	def get_port(self):
+		return self.id
+
+	def get_boat_id(self, loc):
+		return self.board.check_space(*loc)%10
+
+	def get_status(self):
+		return self.status
 
 
 
 # Board
 class Board:
-	"""docstring"""
+	"""The actual plot that records boat positions, shots, and outcomes"""
 
 	def __init__(self, dim):
 		self.plot = [[0] * dim for i in range(dim)]
@@ -477,7 +529,9 @@ class Board:
 		if loc < 10:
 			self.plot[x - 1][y - 1] += 10
 
+
 class Client(Transmitter):
+	"""A client side data-structure to store game, socket, and user information"""
 
 	def __init__(self, socket, port):
 		Transmitter.__init__(self, socket)
@@ -544,7 +598,7 @@ class Client(Transmitter):
 		print("Game#: {}\nBoat Count: {}\nBoat Format: {}".format(self.gameId, boats, self.shipFormat))
 
 
-	# CHECK THIS THOROUGHLY
+	# TODO: CHECK THIS THOROUGHLY
 	def takeTurn(self, shooter, target, x, y):
 
 		# Check if it's the player's turn
@@ -630,6 +684,7 @@ class Client(Transmitter):
 
 
 class Opponent:
+	"""Client-side data structure to organize information about their opponents"""
 
 	def __init__(self, port, name, boardSize):
 		self.port = port

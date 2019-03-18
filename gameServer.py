@@ -5,7 +5,6 @@
 import socket
 import selectors
 import types
-# import sys
 import argparse
 from time import sleep
 import models
@@ -33,7 +32,6 @@ def main():
 		while True:
 			events = sel.select(timeout=None)
 
-			# sleep(1)
 			for key, mask in events:
 
 				if key.data is None:
@@ -43,8 +41,6 @@ def main():
 					process_read_request(gameManager, key)
 
 	except KeyboardInterrupt:
-		sel.close()
-		server.close()
 		print("caught keyboard interrupt, exiting")
 	finally:
 		sel.close()
@@ -68,7 +64,7 @@ def check_arguments():
 
 
 def process_read_request(manager, conn):
-	# parse connection
+	# parse conn
 	sock = conn.fileobj
 	player = conn.data
 
@@ -76,21 +72,25 @@ def process_read_request(manager, conn):
 	# read message type
 	msgType = read_socket(sock, 4)
 
+
 	# Process incoming client message
+
+
+	# Change player's name
 	if msgType == "NAME":
 		# Change player's name
 		name = read_socket(sock, 20).lstrip(" ")
 		player.set_name(name)
 
 
-
+	# Add player to a game
 	elif msgType == "JOIN":
-		# Allow player to join game
 		desiredPlayers = read_socket(sock, 1)
 
 		manager.join_open_game(int(desiredPlayers), player)
 
 
+	# Set a player's boat
 	elif msgType == "SETB":
 
 		# parse incoming message
@@ -101,6 +101,7 @@ def process_read_request(manager, conn):
 		game = manager.get_game(gameId)
 		boatLength = game.get_boat_length(boatId)
 
+		# Game could not be found --> there was an error
 		if game == None:
 			pass
 
@@ -113,7 +114,7 @@ def process_read_request(manager, conn):
 		player.place_boat(boatId, coords)
 
 
-
+	# Process player's shot
 	elif msgType == "SHOT":
 
 		# parse incoming message
@@ -122,6 +123,7 @@ def process_read_request(manager, conn):
 
 		game = manager.get_game(gameId)
 
+		# Game could not be found --> there was an error
 		if game == None:
 			pass
 
@@ -134,12 +136,13 @@ def process_read_request(manager, conn):
 		game.advance_turn()
 
 
-
+	# Remove player from a game
 	elif msgType == "QUIT":
 		# parse incoming message
 		gameId = read_socket(sock, 3)
 		game = manager.get_game(gameId)
 
+		# Game could not be found --> there was an error
 		if game==None:
 			pass
 
