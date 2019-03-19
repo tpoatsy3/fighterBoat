@@ -1,3 +1,13 @@
+"""
+Ted Poatsy, March 2018
+
+This is the python side of the kivy GUI interface
+
+TODO: Add logic and tie in gameClient.py for logic
+"""
+
+
+
 import kivy
 
 kivy.require('1.10.1')
