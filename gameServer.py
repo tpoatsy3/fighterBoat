@@ -30,6 +30,7 @@ def main():
 	try:
 		# Game loop
 		while True:
+			sleep(1)
 			events = sel.select(timeout=None)
 
 			for key, mask in events:

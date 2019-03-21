@@ -1,14 +1,14 @@
 #:kivy 1.10
 
-"""Kivy file defining GUI layout
+# Kivy file defining GUI layout
 
-API docs:
-https://kivy.org/doc/stable/api-kivy.html
+# API docs:
+# https://kivy.org/doc/stable/api-kivy.html
 
-TODO:
-	* Play Screen
-	* Pop-up Notifications
-"""
+# TODO:
+# 	* Play Screen
+# 	* Pop-up Notifications
+
 
 
 # MAIN = (0.13671875, 0.53515625, 0.93359375, 1)
@@ -19,21 +19,40 @@ TODO:
 # LIGHT_GRAY = (0.87109375, 0.90625, 0.921875)
 # BLACK = "#000000"
 
-ScreenManager:
-	# ConnectScreen
-	# JoinScreen
-	# PlacementScreen
+<RootWidget>:
+	screen_manager: root.manager
+	Manager:
+		pos: root.pos
+		size: root.size
+
+
+<Manager>:
+	id: screen_manager
+	conn_scr: root.conn_scr
+	ConnectScreen:
+		screen_manager: root
+		pos: root.pos
+		size: root.size
+	JoinScreen:
+		screen_manager: root
+		pos: root.pos
+		size: root.size
+	PlacementScreen:
+		screen_manager: root
+		pos: root.pos
+		size: root.size
 
 
 
 <ConnectScreen>:
+	screen_manager: self.screen_manager
 	id: connect_screen
 	canvas:
 		Color:
 			rgb: (0.87109375, 0.90625, 0.921875)
 		Rectangle:
-			size: self.size
-			pos: self.pos
+			size: root.size
+			pos: root.pos
 
 	BoxLayout:
 		padding: [0, 0, 0, connect_screen.height/25]
@@ -59,11 +78,13 @@ ScreenManager:
 				color: (0.3254901960784314, 0.41568627450980394, 0.5098039215686274, 1)
 				text: "Server Address"
 			TextInput:
+				text: root.address
 				pos_hint: {'left': connect_screen.center_x}
 				size_hint_y: None
 				padding: [0, self.height/3]
 				color: (0,0,0,0)
 				multiline: False
+				on_text: root.address = self.text
 
 			Label:
 				pos_hint: {'right': connect_screen.center_x}
@@ -71,21 +92,25 @@ ScreenManager:
 				color: (0.3254901960784314, 0.41568627450980394, 0.5098039215686274, 1)
 				text: "Server Port"
 			TextInput:
+				text: root.port
 				pos_hint: {'left': connect_screen.center_x}
 				size_hint_y: None
 				padding: [0, self.height/3]
 				color: (0, 0, 0, 0)
 				multiline: False
+				on_text: root.port = self.text
 
 		Button:
 			size_hint: (None, .2)
 			pos_hint: {'center_x': .5, 'center_y': .5}
 			width: connect_screen.width/4
 			text: "Connect"
+			on_press: root.create_connection()
 
 
 <JoinScreen>:
 	id: join_screen
+	screen_manager: self.screen_manager
 	canvas:
 		Color:
 			rgb: (1.0, 0.8313725490196079, 0.28627450980392155)
@@ -142,6 +167,7 @@ ScreenManager:
 
 <PlacementScreen>:
 	id: placement_screen
+	screen_manager: self.screen_manager
 	canvas:
 		Color:
 			rgb: (0.87109375, 0.90625, 0.921875)

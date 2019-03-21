@@ -32,18 +32,34 @@ from time import sleep
 
 import models
 
+import kivy
+
+kivy.require('1.10.1')
+
+from kivy.app import App
+from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
+from kivy.lang import Builder
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.widget import Widget
+
+
+
+
+
+
 
 
 
 
 sel = selectors.DefaultSelector()
 
-def main():
-	if len(sys.argv) != 3:
-		print("usage:", sys.argv[0], "<host> <port>")
-		sys.exit(1)
+def main(host, port):
+	# if len(sys.argv) != 3:
+	# 	print("usage:", sys.argv[0], "<host> <port>")
+	# 	sys.exit(1)
 
-	host, port = sys.argv[1:3] # checkArguments()
+	# host, port = sys.argv[1:3] # checkArguments()
 	start_connection(host, int(port))
 
 	try:
@@ -192,5 +208,44 @@ def service_connection(key, mask):
 			sent = sock.send(data.outb.encode())
 			data.outb = None
 
+
+class ConnectScreen(Screen):
+	name = StringProperty('conn_scr')
+	address = StringProperty("localhost")
+	port = StringProperty()
+	manager = ObjectProperty(None)
+
+	def create_connection(self, *args):
+		start_connection(self.address, int(self.port))
+		self.manager.switch_to('join_scr')
+
+class Manager(ScreenManager):
+	conn_scr = ObjectProperty(None)
+	join_scr = ObjectProperty(None)
+	placement_scr = ObjectProperty(None)
+
+class RootWidget(Widget):
+
+	manager = ObjectProperty(None)
+
+
+class FbBoard(BoxLayout):
+	pass
+
+class PlacementScreen(Screen):
+	name = StringProperty('placement_scr')
+
+
+class JoinScreen(Screen):
+	name = StringProperty('join_scr')
+
+
+class FboatApp(App):
+	def build(self):
+		return RootWidget()
+
+
+
+
 if __name__ == '__main__':
-	main()
+	FboatApp().run()
