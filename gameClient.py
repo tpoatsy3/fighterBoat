@@ -1,24 +1,5 @@
 # Battleship client
 
-# import socket
-# import thread
-
-# def on_connect(client, addr):
-# 	msg = client.recv(1024)
-# 	print("{0}: {1}".format(addr, msg))
-# 	msg = raw_input("To {0}:".format(addr))
-# 	client.send(msg)
-
-
-# cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# cli.connect(('', 2136))
-# cli.send("hello".encode())
-
-# while True:
-# 	print(cli.recv(1024))
-# 	inpt = raw_input("type anything and click enter... ")
-# 	cli.send(inpt)
-
 
 import socket
 import selectors
@@ -28,128 +9,19 @@ import signal
 import fcntl
 import os
 
+from functools import partial
 from time import sleep
 
 import models
 
 import kivy
-
 kivy.require('1.10.1')
-
 from kivy.app import App
-from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, StringProperty
-from kivy.lang import Builder
+from kivy.properties import NumericProperty, ListProperty, ObjectProperty, StringProperty
+from kivy.clock import Clock
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.widget import Widget
-
-
-
-
-
-
-
-
-
-
-sel = selectors.DefaultSelector()
-
-def main(host, port):
-	# if len(sys.argv) != 3:
-	# 	print("usage:", sys.argv[0], "<host> <port>")
-	# 	sys.exit(1)
-
-	# host, port = sys.argv[1:3] # checkArguments()
-	start_connection(host, int(port))
-
-	try:
-		while True:
-
-			sleep(1)
-			events = sel.select(timeout=0)
-			for key, mask in events:
-				if type(key.data) == models.Client:
-
-					if mask & selectors.EVENT_READ:
-						process_server_msg(key)
-				else:
-					got_keyboard_data(key.fileobj, key.data)
-
-			# Check for a socket being monitored to continue.
-			if not sel.get_map():
-				break
-	except KeyboardInterrupt:
-		print("caught keyboard interrupt, exiting")
-
-	finally:
-		sel.unregister(sys.stdin)
-		sel.close()
-
-def process_server_msg(key):
-	conn = key.fileobj
-	client = key.data
-
-	msg = conn.recv(4).decode()
-	print("msg:" + msg)
-
-	if msg == "GAME":
-		client.parse_game_msg()
-		return
-
-	gameId = conn.recv(3).decode()
-
-	# Check for correct game number
-	if client.get_game_id() != gameId:
-		# IGNORE MESSAGE, ERROR HAS OCCURED
-		wrongMsg = conn.recv(1024).decode()
-		print("THE WRONG GAME NUMBER WAS SENT TO {}, YOU HAVE SOME WORK TO DO".format(client.get_port()))
-		print("Wrong Message: {}".format(wrongMsg))
-		return None
-
-	if msg == "WAIT":
-		client.parse_wait_msg()
-
-	elif msg == "PLAY":
-		client.parse_play_msg()
-
-	elif msg == "SAIL":
-		client.parse_sail_msg()
-
-
-def got_keyboard_data(stdin, data):
-	msg = stdin.read()
-	send_message(data, msg)
-
-
-def set_nonblocking_stdin():
-	# Set sys.stdin non-blocking
-	orig_fl = fcntl.fcntl(sys.stdin, fcntl.F_GETFL)
-	fcntl.fcntl(sys.stdin, fcntl.F_SETFL, orig_fl | os.O_NONBLOCK)
-
-
-def start_connection(host, port):
-
-	# Connection to server
-	addr = (host, port)
-	print('starting connection to', addr)
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.setblocking(False)
-	sock.connect_ex(addr)
-
-	events = selectors.EVENT_READ | selectors.EVENT_WRITE
-
-	myHost, myPort = sock.getsockname()
-
-	data = models.Client(sock, myPort)
-
-	set_nonblocking_stdin()
-
-	sel.register(sock, events, data=data)
-	sel.register(sys.stdin, selectors.EVENT_READ, data=sock)
-
-
-
-
 
 
 def send_message(socket, input):
@@ -159,10 +31,6 @@ def send_message(socket, input):
 
 	# if msgType == "JOIN":
 		# players = input("Number of players:")
-
-
-
-
 
 
 	# elif msgType == "NAME":
@@ -178,73 +46,139 @@ def send_message(socket, input):
 
 
 
-
-
-
-def process_event(key):
-	# print(key)
-	return None
-	# sock =
-
-def service_connection(key, mask):
-	sock = key.fileobj
-	data = key.data
-
-	if mask & selectors.EVENT_READ:
-		recv_data = sock.recv(1024).decode()
-		if recv_data:
-			print('recieved', repr(recv_data), 'from connection')
-
-		if not recv_data:
-			print('closing connection', data.connid)
-			sel.unregister(sock)
-			sock.close()
-
-	if mask & selectors.EVENT_WRITE:
-		if not data.outb:
-			data.outb = input("Send to server: ")
-		if data.outb:
-			print('sending', repr(data.outb), 'to connection')
-			sent = sock.send(data.outb.encode())
-			data.outb = None
-
-
-class ConnectScreen(Screen):
-	name = StringProperty('conn_scr')
-	address = StringProperty("localhost")
-	port = StringProperty()
-	manager = ObjectProperty(None)
-
-	def create_connection(self, *args):
-		start_connection(self.address, int(self.port))
-		self.manager.switch_to('join_scr')
-
-class Manager(ScreenManager):
-	conn_scr = ObjectProperty(None)
-	join_scr = ObjectProperty(None)
-	placement_scr = ObjectProperty(None)
-
-class RootWidget(Widget):
-
-	manager = ObjectProperty(None)
-
-
 class FbBoard(BoxLayout):
 	pass
 
+
+
+class ConnectScreen(Screen):
+	address = StringProperty("localhost")
+	port = StringProperty("2136")
+	manager = ObjectProperty(None)
+
+	def __init__(self, **kwargs):
+		super(ConnectScreen, self).__init__(**kwargs)
+		self.fboatApp = App.get_running_app()
+
+	def create_connection(self, *args):
+		self.fboatApp.start_connection(self.address, int(self.port))
+		self.manager.to_join_scr()
+		Clock.schedule_interval(self.fboatApp.service_connection, 1.0)
+
+
 class PlacementScreen(Screen):
-	name = StringProperty('placement_scr')
+	pass
+
 
 
 class JoinScreen(Screen):
-	name = StringProperty('join_scr')
+	opps = NumericProperty()
+
+	def __init__(self, **kwargs):
+		super(JoinScreen, self).__init__(**kwargs)
+
+	def send_join_msg(self, opps):
+		pass
+
+
+
+class Manager(ScreenManager):
+	def __init__(self, **kwargs):
+		super(Manager, self).__init__(**kwargs)
+		self.fboatApp = App.get_running_app()
+
+	def to_conn_scr(self, *args):
+		self.current = "connect_scr"
+
+	def to_join_scr(self, *args):
+		self.current = "join_scr"
+
+	def to_placement_scr(self, *args):
+		self.current = "placement_scr"
+
 
 
 class FboatApp(App):
-	def build(self):
-		return RootWidget()
+
+	# Colors for Kivy Lang File
+	color_main = ListProperty([0.13671875, 0.53515625, 0.93359375])
+	color_accent_1 = ListProperty([1.0, 0.8313725490196079, 0.28627450980392155])
+	color_accent_2 = ListProperty([1.0, 0.6745098039215687, 0.5176470588235295])
+	color_white = ListProperty([1, 1, 1])
+	color_dark_gray = ListProperty([0.3254901960784314, 0.41568627450980394, 0.5098039215686274])
+	color_light_gray = ListProperty([0.87109375, 0.90625, 0.921875])
+	color_black = ListProperty([0, 0, 0])
 
 
+	def __init__(self, **kwargs):
+		super(FboatApp, self).__init__(**kwargs)
+		self.sel = selectors.DefaultSelector()
+
+
+	def service_connection(self, *args):
+		events = self.sel.select(timeout=0)
+		for key, mask in events:
+			if mask & selectors.EVENT_READ:
+				process_server_msg(key)
+
+
+	def start_connection(self, host, port):
+
+		# Connection to server
+		addr = (host, port)
+		print('starting connection to', addr)
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		sock.setblocking(False)
+		sock.connect_ex(addr)
+
+		# Create Client datatype
+		events = selectors.EVENT_READ | selectors.EVENT_WRITE
+		myHost, myPort = sock.getsockname()
+		data = models.Client(sock, myPort)
+
+		# Add socket to selectors
+		self.sel.register(sock, events, data=data)
+
+
+	def process_server_msg(self, key):
+		conn = key.fileobj
+		client = key.data
+
+		msg = conn.recv(4).decode()
+		print("msg:" + msg)
+
+		if msg == "GAME":
+			client.parse_game_msg()
+			return
+
+		gameId = conn.recv(3).decode()
+
+		# Check for correct game number
+		if client.get_game_id() != gameId:
+			# IGNORE MESSAGE, ERROR HAS OCCURED
+			wrongMsg = conn.recv(1024).decode()
+			print("THE WRONG GAME NUMBER WAS SENT TO {}, YOU HAVE SOME WORK TO DO".format(client.get_port()))
+			print("Wrong Message: {}".format(wrongMsg))
+			return None
+
+		if msg == "WAIT":
+			client.parse_wait_msg()
+
+		elif msg == "PLAY":
+			client.parse_play_msg()
+
+		elif msg == "SAIL":
+			client.parse_sail_msg()
+
+
+	def on_stop(self):
+		map = self.sel.get_map()
+		keys = list(map.keys())
+		for conn in keys:
+			socket = self.sel.get_key(conn).fileobj
+			socket.close()
+			self.sel.unregister(conn)
+		self.sel.close()
 
 
 if __name__ == '__main__':
