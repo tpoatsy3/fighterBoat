@@ -14,10 +14,12 @@ Manager:
 
 	ConnectScreen:
 		name: "connect_scr"
+		id: connect_scr
 		pos: root.pos
 		size: root.size
 	JoinScreen:
 		name: "join_scr"
+		id: join_scr
 		pos: root.pos
 		size: root.size
 	PlacementScreen:
@@ -93,6 +95,12 @@ Manager:
 
 <JoinScreen>:
 	manager: root.manager
+	join_button_1: join_button_1
+	join_button_2: join_button_2
+	join_button_3: join_button_3
+	join_button_4: join_button_4
+	wait_text: wait_text
+
 	id: join_screen
 	canvas:
 		Color:
@@ -116,38 +124,44 @@ Manager:
 		BoxLayout:
 			spacing: join_screen.width/20
 			Button:
+				id: join_button_1
 				text: '1'
 				color: app.color_dark_gray + [1]
 				font_size: 80
 				background_color: app.color_main + [1]
 				background_normal: ''
-				# on_press: root.
+				on_press: root.send_join_msg(self.text)
 			Button:
+				id: join_button_2
 				text: '2'
 				color: app.color_dark_gray + [1]
 				font_size: 80
 				background_color: app.color_main + [1]
 				background_normal: ''
-
+				on_press: root.send_join_msg(self.text)
 			Button:
+				id: join_button_3
 				text: '3'
 				color: app.color_dark_gray + [1]
 				font_size: 80
 				background_color: app.color_main + [1]
 				background_normal: ''
+				on_press: root.send_join_msg(self.text)
 			Button:
+				id: join_button_4
 				text: '4'
 				color: app.color_dark_gray + [1]
 				font_size: 80
 				background_color: app.color_main + [1]
 				background_normal: ''
+				on_press: root.send_join_msg(self.text)
 
 		Label:
-			text: "We currently have x of y players. Please wait..."
+			id: wait_text
+			text: "Loading..."
 			font_size: 40
 			color: app.color_dark_gray + [0]
 			background_color: app.color_black + [0]
-
 
 <PlacementScreen>:
 	id: placement_screen

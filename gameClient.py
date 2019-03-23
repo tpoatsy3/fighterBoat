@@ -61,9 +61,9 @@ class ConnectScreen(Screen):
 		self.fboatApp = App.get_running_app()
 
 	def create_connection(self, *args):
-		self.fboatApp.start_connection(self.address, int(self.port))
+		self.fboatApp.client = self.fboatApp.start_connection(self.address, int(self.port))
 		self.manager.to_join_scr()
-		Clock.schedule_interval(self.fboatApp.service_connection, 1.0)
+		Clock.schedule_interval(self.fboatApp.service_connection, .5)
 
 
 class PlacementScreen(Screen):
@@ -73,13 +73,33 @@ class PlacementScreen(Screen):
 
 class JoinScreen(Screen):
 	opps = NumericProperty()
+	join_button_1 = ObjectProperty(None)
+	join_button_2 = ObjectProperty(None)
+	join_button_3 = ObjectProperty(None)
+	join_button_4 = ObjectProperty(None)
+	wait_text = ObjectProperty(None)
+	wait_player = NumericProperty(0)
+	# client = ObjectProperty(None)
 
 	def __init__(self, **kwargs):
 		super(JoinScreen, self).__init__(**kwargs)
+		self.fboatApp = App.get_running_app()
+		# self.client = self.fboatApp.client
 
 	def send_join_msg(self, opps):
-		pass
+		self.fboatApp.client.send_join_msg(opps)
+		self.join_button_1.disabled = True
+		self.join_button_2.disabled = True
+		self.join_button_3.disabled = True
+		self.join_button_4.disabled = True
+		self.wait_text.color = self.fboatApp.color_dark_gray + [1]
+		# self.fboatApp.client.bind(player_count = self.on_wait_player)
 
+	def set_wait_text(self, have, want):
+		self.wait_text.text = "Your game currently has {0} of {1} players. Please wait...".format(have, want)
+
+	def on_wait_player(self):
+		self.wait_text(self.fboatApp.client.player_count, self.fboatApp.client.player_goal)
 
 
 class Manager(ScreenManager):
@@ -109,6 +129,8 @@ class FboatApp(App):
 	color_light_gray = ListProperty([0.87109375, 0.90625, 0.921875])
 	color_black = ListProperty([0, 0, 0])
 
+	client = ObjectProperty(None)
+
 
 	def __init__(self, **kwargs):
 		super(FboatApp, self).__init__(**kwargs)
@@ -119,7 +141,7 @@ class FboatApp(App):
 		events = self.sel.select(timeout=0)
 		for key, mask in events:
 			if mask & selectors.EVENT_READ:
-				process_server_msg(key)
+				self.process_server_msg(key)
 
 
 	def start_connection(self, host, port):
@@ -139,6 +161,8 @@ class FboatApp(App):
 		# Add socket to selectors
 		self.sel.register(sock, events, data=data)
 
+		return data
+
 
 	def process_server_msg(self, key):
 		conn = key.fileobj
@@ -155,6 +179,7 @@ class FboatApp(App):
 
 		# Check for correct game number
 		if client.get_game_id() != gameId:
+			print("This is the game: {}".format(gameId))
 			# IGNORE MESSAGE, ERROR HAS OCCURED
 			wrongMsg = conn.recv(1024).decode()
 			print("THE WRONG GAME NUMBER WAS SENT TO {}, YOU HAVE SOME WORK TO DO".format(client.get_port()))
@@ -162,7 +187,8 @@ class FboatApp(App):
 			return None
 
 		if msg == "WAIT":
-			client.parse_wait_msg()
+			have, want = client.parse_wait_msg()
+			self.root.ids.join_scr.set_wait_text(have, want)
 
 		elif msg == "PLAY":
 			client.parse_play_msg()

@@ -1,4 +1,5 @@
 from random import uniform, shuffle # used by Game
+from kivy.event import EventDispatcher
 from copy import deepcopy
 import math
 
@@ -102,7 +103,7 @@ class GameManager:
 
 		# Create new gameId and increment for next use (gamecounter must remain a )
 		newId = self.gameCounter
-		self.gameCounter == (self.gameCounter + 1) % 1000
+		self.gameCounter = (self.gameCounter + 1) % 1000
 
 		# Create new game
 		game = Game(newId, numPlayers)
@@ -530,7 +531,7 @@ class Board:
 			self.plot[x - 1][y - 1] += 10
 
 
-class Client(Transmitter):
+class Client(Transmitter, EventDispatcher):
 	"""A client side data-structure to store game, socket, and user information"""
 
 	def __init__(self, socket, port):
@@ -539,7 +540,12 @@ class Client(Transmitter):
 		self.socket = socket
 		self.port = port
 
+		self.status = None
+
 		self.myBoard = None
+
+		self.player_count = 0
+		self.player_goal = 0
 
 		self.gameId = None
 		self.boardSize = None
@@ -549,8 +555,16 @@ class Client(Transmitter):
 
 		self.opponents = {}
 
-	def send_msg(self, socket, msg):
-		socket.send(msg.encode())
+	def send_msg(self, msg):
+		self.socket.send(msg.encode())
+
+	def send_join_msg(self, opps):
+		msg = "JOIN"
+		player_count = self.str_with_buffer(int(opps) +1, 1, 0)
+
+		outMsg = msg + player_count
+
+		self.send_msg(outMsg)
 
 	def get_port(self):
 		return self.port
@@ -562,11 +576,12 @@ class Client(Transmitter):
 		self.gameId = self.recv_str(3)
 
 	def parse_wait_msg(self):
-		count = self.recv_int(1)
-		target = self.recv_int(1)
+		self.player_count = self.recv_int(1)
+		self.player_goal = self.recv_int(1)
 
-		print("Game #{} currently has {} of {} players".format(self.gameId, count, target))
+		print("Game #{} currently has {} of {} players".format(self.gameId, self.player_count, self.player_goal))
 		print("Please continue waiting")
+		return(self.player_count, self.player_goal)
 
 	def parse_play_msg(self):
 		self.boardSize = self.recv_int(2)
