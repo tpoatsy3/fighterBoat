@@ -557,6 +557,7 @@ class Client(Transmitter, EventDispatcher):
 
 	def send_msg(self, msg):
 		self.socket.send(msg.encode())
+		print("OUT: {}".format(msg))
 
 	def send_join_msg(self, opps):
 		msg = "JOIN"
@@ -565,6 +566,27 @@ class Client(Transmitter, EventDispatcher):
 		outMsg = msg + player_count
 
 		self.send_msg(outMsg)
+
+	def send_setb_msg(self, boatId, coords):
+		msg = "SETB"
+		gameId = self.str_with_buffer(self.gameId, 3, 0)
+		boatId = self.str_with_buffer(boatId, 1, 0)
+		coords = self.str_with_buffer(''.join(map(str, coords)), len(coords), 0)
+
+		outMsg = msg + gameId + boatId + coords
+
+		self.send_msg(outMsg)
+
+	def set_boat(self, boatId, coords):
+		locs = []
+		for i in coords:
+			for x in i:
+				locs.append(int(x))
+
+		self.myBoard.place_boat(boatId, locs)
+
+		self.send_setb_msg(boatId, coords)
+
 
 	def get_port(self):
 		return self.port
@@ -586,19 +608,15 @@ class Client(Transmitter, EventDispatcher):
 	def parse_play_msg(self):
 		self.boardSize = self.recv_int(2)
 
+		self.myBoard = Board(self.boardSize)
+
 		opps = self.recv_int(1)
-
-		print("Board Size: {}\n# Opponents: {}\n".format(self.boardSize, opps))
-
 
 		for i in range(opps):
 			oppPort = self.recv_str(LEN_PORT)
 			oppName = self.recv_str(LEN_NAME)
 			opp = Opponent(oppPort, oppName, self.boardSize)
 			self.opponents[oppPort] = opp
-
-			print("~~~Opponent #{}~~~\nPort: {}\nName: {}\n".format(i, oppPort, oppName))
-
 
 	def parse_sail_msg(self):
 		self.coordLen = self.recv_int(1)
@@ -611,6 +629,8 @@ class Client(Transmitter, EventDispatcher):
 
 		print("SAIL")
 		print("Game#: {}\nBoat Count: {}\nBoat Format: {}".format(self.gameId, boats, self.shipFormat))
+
+		return self.shipFormat
 
 
 	# TODO: CHECK THIS THOROUGHLY

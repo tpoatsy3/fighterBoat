@@ -24,7 +24,7 @@ Manager:
 		size: root.size
 	PlacementScreen:
 		name: "placement_scr"
-		id: placement_screen
+		id: placement_scr
 		pos: root.pos
 		size: root.size
 
@@ -95,10 +95,7 @@ Manager:
 
 <JoinScreen>:
 	manager: root.manager
-	join_button_1: join_button_1
-	join_button_2: join_button_2
-	join_button_3: join_button_3
-	join_button_4: join_button_4
+	join_buttons: join_button_1, join_button_2, join_button_3, join_button_4
 	wait_text: wait_text
 
 	id: join_screen
@@ -166,6 +163,10 @@ Manager:
 <PlacementScreen>:
 	id: placement_screen
 	manager: root.manager
+	hor: root.hor
+	boat_span: root.boat_span
+	boatButtons: [place_1, place_2, place_3, place_4, place_5]
+
 	canvas:
 		Color:
 			rgb: app.color_light_gray + [1]
@@ -186,6 +187,7 @@ Manager:
 			size_hint_y: .7
 
 			FbBoard:
+				id: board
 				size_hint_x: .7
 
 			BoxLayout:
@@ -194,8 +196,12 @@ Manager:
 
 				Button:
 					size_hint_y: 1/9
+					font_size: 40
+					markup: True
+					text: "[u][b]Select a boat[/b][/u]"
 					background_normal: ''
-					background_color: (.7, .3, .5, 0)
+					background_color: app.color_light_gray + [1]
+					color: app.color_dark_gray + [1]
 
 				BoxLayout:
 					orientation: 'vertical'
@@ -203,28 +209,39 @@ Manager:
 					size_hint_y: 8/9
 					BoatButton:
 						text: 'Place 2 Boat'
+						id: place_1
+						on_press: self.register_click()
 
 					BoatButton:
 						text: 'Place 3 Boat'
+						id: place_2
+						on_press: self.register_click()
 
 					BoatButton:
 						text: 'Place 3 Boat'
+						id: place_3
+						on_press: self.register_click()
 
 					BoatButton:
 						text: 'Place 4 Boat'
+						id: place_4
+						on_press: self.register_click()
 
 					BoatButton:
 						text: 'Place 5 Boat'
+						id: place_5
+						on_press: self.register_click()
 		BoxLayout:
 			size_hint_y: .1
 			spacing: self.width/15
 
 			Button:
 				# size_hint_x: .1
-				text: 'Placing boat vertically, click to place horizontally'
+				text: 'Rotate selected boat'
 				size_hint_x: .75
 				background_normal: ''
 				background_color: (.7, .3, .5, 1)
+				on_press: root.hor = not root.hor
 
 			Button:
 				text: 'Ready to play'
@@ -233,7 +250,7 @@ Manager:
 				background_color: (.7, .3, .5, 1)
 
 
-<BoatButton@Button>:
+<BoatButton>:
 	background_normal: ''
 	background_color: (.5, .7, .3, 1)
 	text_size: self.width, None
@@ -270,159 +287,224 @@ Manager:
 			BoardLabel:
 				text: '1'
 			FbBoardSpace:
-				id: 'Space00'
+				text: "00"
+				id: space00
 			FbBoardSpace:
-				id: 'Space10'
+				text: "10"
+				id: space10
 			FbBoardSpace:
-				id: 'Space20'
+				text: "20"
+				id: space20
 			FbBoardSpace:
-				id: 'Space30'
+				text: "30"
+				id: space30
 			FbBoardSpace:
-				id: 'Space40'
+				text: "40"
+				id: space40
 			FbBoardSpace:
-				id: 'Space50'
+				text: "50"
+				id: space50
 			FbBoardSpace:
-				id: 'Space60'
+				text: "60"
+				id: space60
 			FbBoardSpace:
-				id: 'Space70'
+				text: "70"
+				id: space70
 		FbBoardRow:
 			BoardLabel:
 				text: '2'
 			FbBoardSpace:
-				id: 'Space01'
+				text: "01"
+				id: space01
 			FbBoardSpace:
-				id: 'Space11'
+				text: "11"
+				id: space11
 			FbBoardSpace:
-				id: 'Space21'
+				text: "21"
+				id: space21
 			FbBoardSpace:
-				id: 'Space31'
+				text: "31"
+				id: space31
 			FbBoardSpace:
-				id: 'Space41'
+				text: "41"
+				id: space41
 			FbBoardSpace:
-				id: 'Space51'
+				text: "51"
+				id: space51
 			FbBoardSpace:
-				id: 'Space61'
+				text: "61"
+				id: space61
 			FbBoardSpace:
-				id: 'Space71'
+				text: "71"
+				id: space71
 		FbBoardRow:
 			BoardLabel:
 				text: '3'
 			FbBoardSpace:
-				id: 'Space02'
+				text: "02"
+				id: space02
 			FbBoardSpace:
-				id: 'Space12'
+				text: "12"
+				id: space12
 			FbBoardSpace:
-				id: 'Space22'
+				text: "22"
+				id: space22
 			FbBoardSpace:
-				id: 'Space32'
+				text: "32"
+				id: space32
 			FbBoardSpace:
-				id: 'Space42'
+				text: "42"
+				id: space42
 			FbBoardSpace:
-				id: 'Space52'
+				text: "52"
+				id: space52
 			FbBoardSpace:
-				id: 'Space62'
+				text: "62"
+				id: space62
 			FbBoardSpace:
-				id: 'Space72'
+				text: "72"
+				id: space72
 		FbBoardRow:
 			BoardLabel:
 				text: '4'
 			FbBoardSpace:
-				id: 'Space03'
+				text: "03"
+				id: space03
 			FbBoardSpace:
-				id: 'Space13'
+				text: "13"
+				id: space13
 			FbBoardSpace:
-				id: 'Space23'
+				text: "23"
+				id: space23
 			FbBoardSpace:
-				id: 'Space33'
+				text: "33"
+				id: space33
 			FbBoardSpace:
-				id: 'Space43'
+				text: "43"
+				id: space43
 			FbBoardSpace:
-				id: 'Space53'
+				text: "53"
+				id: space53
 			FbBoardSpace:
-				id: 'Space63'
+				text: "63"
+				id: space63
 			FbBoardSpace:
-				id: 'Space73'
+				text: "73"
+				id: space73
 		FbBoardRow:
 			BoardLabel:
 				text: '5'
 			FbBoardSpace:
-				id: 'Space04'
+				text: "04"
+				id: space04
 			FbBoardSpace:
-				id: 'Space14'
+				text: "14"
+				id: space14
 			FbBoardSpace:
-				id: 'Space24'
+				text: "24"
+				id: space24
 			FbBoardSpace:
-				id: 'Space34'
+				text: "34"
+				id: space34
 			FbBoardSpace:
-				id: 'Space44'
+				text: "44"
+				id: space44
 			FbBoardSpace:
-				id: 'Space54'
+				text: "54"
+				id: space54
 			FbBoardSpace:
-				id: 'Space64'
+				text: "64"
+				id: space64
 			FbBoardSpace:
-				id: 'Space74'
+				text: "74"
+				id: space74
 		FbBoardRow:
 			BoardLabel:
 				text: '6'
 			FbBoardSpace:
-				id: 'Space05'
+				text: "05"
+				id: space05
 			FbBoardSpace:
-				id: 'Space15'
+				text: "15"
+				id: space15
 			FbBoardSpace:
-				id: 'Space25'
+				text: "25"
+				id: space25
 			FbBoardSpace:
-				id: 'Space35'
+				text: "35"
+				id: space35
 			FbBoardSpace:
-				id: 'Space45'
+				text: "45"
+				id: space45
 			FbBoardSpace:
-				id: 'Space55'
+				text: "55"
+				id: space55
 			FbBoardSpace:
-				id: 'Space65'
+				text: "65"
+				id: space65
 			FbBoardSpace:
-				id: 'Space75'
+				text: "75"
+				id: space75
 		FbBoardRow:
 			BoardLabel:
 				text: '7'
 			FbBoardSpace:
-				id: 'Space06'
+				text: "06"
+				id: space06
 			FbBoardSpace:
-				id: 'Space16'
+				text: "16"
+				id: space16
 			FbBoardSpace:
-				id: 'Space26'
+				text: "26"
+				id: space26
 			FbBoardSpace:
-				id: 'Space36'
+				text: "36"
+				id: space36
 			FbBoardSpace:
-				id: 'Space46'
+				text: "46"
+				id: space46
 			FbBoardSpace:
-				id: 'Space56'
+				text: "56"
+				id: space56
 			FbBoardSpace:
-				id: 'Space66'
+				text: "66"
+				id: space66
 			FbBoardSpace:
-				id: 'Space76'
+				text: "76"
+				id: space76
 		FbBoardRow:
 			BoardLabel:
 				text: '8'
 			FbBoardSpace:
-				id: 'Space07'
+				text: "07"
+				id: space07
 			FbBoardSpace:
-				id: 'Space17'
+				text: "17"
+				id: space17
 			FbBoardSpace:
-				id: 'Space27'
+				text: "27"
+				id: space27
 			FbBoardSpace:
-				id: 'Space37'
+				text: "37"
+				id: space37
 			FbBoardSpace:
-				id: 'Space47'
+				text: "47"
+				id: space47
 			FbBoardSpace:
-				id: 'Space57'
+				text: "57"
+				id: space57
 			FbBoardSpace:
-				id: 'Space67'
+				text: "67"
+				id: space67
 			FbBoardSpace:
-				id: 'Space77'
+				text: "77"
+				id: space77
 
 
-<FbBoardSpace@Button>:
+<FbBoardSpace>:
 	background_normal: ''
 	background_color: (.7, .7, .7, 1)
+	color: (0,0,0,0)
 
 
 <BoardLabel@Label>:
