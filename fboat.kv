@@ -11,6 +11,8 @@
 
 Manager:
 	id: screen_manager
+	play_scr: play_scr
+	placement_scr: placement_scr
 
 	ConnectScreen:
 		name: "connect_scr"
@@ -27,6 +29,12 @@ Manager:
 		id: placement_scr
 		pos: root.pos
 		size: root.size
+	PlayScreen:
+		name: "play_scr"
+		id: play_scr
+		pos: root.pos
+		size: root.size
+
 
 
 <ConnectScreen>:
@@ -160,6 +168,7 @@ Manager:
 			color: app.color_dark_gray + [0]
 			background_color: app.color_black + [0]
 
+
 <PlacementScreen>:
 	id: placement_screen
 	manager: root.manager
@@ -245,6 +254,7 @@ Manager:
 
 			Button:
 				text: 'Ready to play'
+				on_press: root.go_to_play()
 				size_hint_x: .25
 				background_normal: ''
 				background_color: (.7, .3, .5, 1)
@@ -255,6 +265,45 @@ Manager:
 	background_color: (.5, .7, .3, 1)
 	text_size: self.width, None
 	halign: 'center'
+
+
+<PlayScreen>:
+	id: placement_screen
+	manager: root.manager
+
+	canvas:
+		Color:
+			rgb: app.color_light_gray + [1]
+		Rectangle:
+			size: self.size
+			pos: self.pos
+
+	TabbedPanel:
+		id: panel_frame
+		background_color: app.color_accent_1
+		background_image: ''
+		do_default_tab: False
+
+
+		PlayTab:
+			id: tab_0
+			text: "You"
+			background_color: app.color_accent_2
+
+
+
+
+<PlayTab>:
+
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			size_hint_y: .1
+			id: name_plate
+		FbBoard:
+			size_hint_y: .9
+			id: board
+
 
 
 <FbBoard>:

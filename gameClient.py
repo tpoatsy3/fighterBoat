@@ -11,6 +11,7 @@ import os
 
 from functools import partial
 from time import sleep
+import random
 
 import models
 
@@ -24,16 +25,18 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.widget import Widget
 from kivy.uix.button import Button
+from kivy.uix.tabbedpanel import TabbedPanelItem
 
+DEFAULT_PORT = "2136"
 
 class BoatButton(Button):
 	boat_id = NumericProperty(0)
 	boat_len = NumericProperty(0)
+	placed = BooleanProperty(False)
 
 	def __init__(self, **kwargs):
 		super(Button, self).__init__(**kwargs)
 		self.fboatApp = App.get_running_app()
-		self.placed = False
 		Clock.schedule_once(self.get_placement_screen, 0)
 
 	def get_placement_screen(self, *args):
@@ -45,8 +48,32 @@ class BoatButton(Button):
 
 
 class FbBoard(BoxLayout):
+	spaces = []
+
 	def __init__(self, **kwargs):
 		super(FbBoard, self).__init__(**kwargs)
+		self.fboatApp = App.get_running_app()
+		self.spaces = [[None] * 8 for i in range(8)]		# 	self.spaces.append([None] * 8)
+		Clock.schedule_once(self.create_refs, 0)
+
+	def create_refs(self, *args):
+		for key, val in self.ids.items():
+			x = int(key[-2])
+			y = int(key[-1])
+			self.spaces[x][y] = val
+
+	def register_shot(self, x, y, result):
+		color = []
+		if result == 0:
+			color = 1
+		elif result == 1:
+			color = 2
+		elif result > 20:
+			color = 3
+
+		self.spaces[x][y].status = color
+
+		# Handle elimination and victory
 
 
 class FbBoardSpace(Button):
@@ -54,20 +81,38 @@ class FbBoardSpace(Button):
 	hor = BooleanProperty(True)
 	placement_scr = ObjectProperty(None)
 	available = BooleanProperty(True)
+	status = NumericProperty(0)
+
+	client = ObjectProperty(None)
 
 
 	def __init__(self, **kwargs):
 		super(FbBoardSpace, self).__init__(**kwargs)
-		Window.bind(mouse_pos = self.on_mouse_pos)
 		self.fboatApp = App.get_running_app()
 		Clock.schedule_once(self.get_connection, 0)
 
 
 	def get_connection(self, *args):
 		self.placement_scr = self.fboatApp.root.ids.placement_scr
+		self.play_scr = self.fboatApp.root.ids.play_scr
+		self.client = self.play_scr.client
 
 
-	def on_mouse_pos(self, *args):
+	def on_mouse_pos_play(self, *args):
+		pos = args[1]
+		(x, y) = pos
+
+		if self.status == 0:
+			self.background_color = [.7,.7,.7,1]
+		elif self.status == 1:
+			self.background_color = [1,1,1,1]
+		elif self.status == 2:
+			self.background_color = self.fboatApp.color_accent_1 + [1]
+		elif self.status == 3:
+			self.background_color = self.fboatApp.color_dark_gray + [1]
+
+
+	def on_mouse_pos_placement(self, *args):
 		pos = args[1]
 		(x, y) = pos
 
@@ -84,7 +129,27 @@ class FbBoardSpace(Button):
 					self.hover_color()
 
 
-	def on_press(self, *args):
+	def shoot(self, *args):
+		tar_name = self.play_scr.ids['panel_frame'].current_tab.text
+		if tar_name == "You":
+			return False
+
+		tar_port = self.play_scr.opps_port[tar_name]
+
+
+		print("NAME: {}, PORT: {}, LOC: {}".format(tar_name, tar_port, self.text))
+
+		self.client.take_shot(tar_port, self.text[0], self.text[1])
+
+
+	def do_nothing(self, *args):
+		pass
+
+
+	def place(self, *args):
+
+		if self.placement_scr.boat_span == 0:
+			return False
 
 		coords = [0] * (self.boat_span)
 		base = int(self.text)
@@ -139,9 +204,10 @@ class FbBoardSpace(Button):
 		self.background_color = (.7, .7, .7, 1)
 
 
+
 class ConnectScreen(Screen):
 	address = StringProperty("localhost")
-	port = StringProperty("2135")
+	port = StringProperty(DEFAULT_PORT)
 	manager = ObjectProperty(None)
 
 	def __init__(self, **kwargs):
@@ -154,6 +220,7 @@ class ConnectScreen(Screen):
 		Clock.schedule_interval(self.fboatApp.service_connection, .5)
 
 
+
 class PlacementScreen(Screen):
 	manager = ObjectProperty(None)
 	boat_span = NumericProperty(0)
@@ -164,27 +231,30 @@ class PlacementScreen(Screen):
 	def __init__(self, **kwargs):
 		super(PlacementScreen, self).__init__(**kwargs)
 		self.fboatApp = App.get_running_app()
-		self.spaces = []
-		for i in range(8):
-			self.spaces.append([None] * 8)
-		Clock.schedule_once(self.create_refs, 0)
+		Clock.schedule_once(self.set_up_board, 0)
 
-	def create_refs(self, *args):
+	def set_up_board(self, *args):
 		for key, val in self.ids["board"].ids.items():
-			x = int(key[-1])
-			y = int(key[-2])
-			self.spaces[x][y] = val
+			val.bind(on_press=val.place)
+			Window.bind(mouse_pos = val.on_mouse_pos_placement)
 
 	def on_boat_span(self, *args):
-		for i in self.spaces:
+		for i in self.ids['board'].spaces:
 			for j in i:
 				j.boat_span = self.boat_span
 
-
 	def on_hor(self, *args):
-		for i in range(len(self.spaces)):
-			for j in self.spaces[i]:
+		for i in range(len(self.ids['board'].spaces)):
+			for j in self.ids['board'].spaces[i]:
 				j.hor = self.hor
+
+	def go_to_play(self, *args):
+
+		for boat in self.boatButtons:
+			if not boat.placed:
+				return False
+
+		self.manager.to_play_scr()
 
 
 
@@ -217,7 +287,74 @@ class JoinScreen(Screen):
 		self.wait_text(self.fboatApp.client.player_count, self.fboatApp.client.player_goal)
 
 
+
+class PlayScreen(Screen):
+	manager = ObjectProperty(None)
+	client = ObjectProperty(None)
+	port = StringProperty("")
+
+	# Key: Opp Port; Value: Opponent Object
+	opps = None
+
+	# Key: Opp Name; Value: Opp Port
+	opps_port = {}
+
+	def __init__(self, **kwargs):
+		super(PlayScreen, self).__init__(**kwargs)
+		self.fboatApp = App.get_running_app()
+
+	def start_up(self, *args):
+		self.client = self.fboatApp.client
+		self.port = self.client.get_port()
+		self.opps = self.client.get_opponents()
+		self.panelFrame = self.ids["panel_frame"]
+		self.panelFrame.tab_width = self.width/(len(self.opps) + 1)
+		self.ids['tab_0'].ids['name_plate'].text = "Your board"
+
+		for key, value in self.opps.items():
+			tab = PlayTab()
+			tab.text = value.name
+			tab.id = "tab" + key
+			self.panelFrame.add_widget(tab)
+			self.opps_port[value.name] = key
+			tab.ids['name_plate'].text = "{}'s board".format(value.name)
+
+		for tab in self.panelFrame.tab_list:
+			for spot_id, spot in tab.ids['board'].ids.items():
+				if spot_id[:5] == "space":
+					spot.bind(on_press=spot.shoot)
+					Window.bind(mouse_pos = spot.on_mouse_pos_play)
+
+	def register_shot(self,shooter, target, x, y, result, *args):
+		ind = 0
+		print(target, self.port)
+		if target != self.port:
+			tar_name = self.opps[target].name
+			ind = list(map(lambda x: x.text, self.panelFrame.tab_list)).index(tar_name)
+			self.panelFrame.tab_list[ind].ids['board'].register_shot(x, y, result)
+		else:
+			self.ids['tab_0'].ids['board'].register_shot(x, y, result)
+
+		# announce game event
+
+
+
+
+
+
+
+class PlayTab(TabbedPanelItem):
+
+	def __init__(self, **kwargs):
+		super(PlayTab, self).__init__(**kwargs)
+
+
+
+
+
 class Manager(ScreenManager):
+	play_scr = ObjectProperty(None)
+
 	def __init__(self, **kwargs):
 		super(Manager, self).__init__(**kwargs)
 		self.fboatApp = App.get_running_app()
@@ -230,6 +367,10 @@ class Manager(ScreenManager):
 
 	def to_placement_scr(self, *args):
 		self.current = "placement_scr"
+
+	def to_play_scr(self, *args):
+		self.play_scr.start_up()
+		self.current = "play_scr"
 
 
 
@@ -294,7 +435,6 @@ class FboatApp(App):
 
 		# Check for correct game number
 		if client.get_game_id() != gameId:
-			print("This is the game: {}".format(gameId))
 			# IGNORE MESSAGE, ERROR HAS OCCURED
 			wrongMsg = conn.recv(1024).decode()
 			print("THE WRONG GAME NUMBER WAS SENT TO {}, YOU HAVE SOME WORK TO DO".format(client.get_port()))
@@ -319,6 +459,10 @@ class FboatApp(App):
 
 			self.root.to_placement_scr()
 
+		elif msg == "SHOT":
+			shooter, target, loc, result = client.parse_shot_msg()
+			self.root.ids.play_scr.register_shot(shooter, target, *loc, result)
+
 
 
 	def on_stop(self):
@@ -329,9 +473,6 @@ class FboatApp(App):
 			socket.close()
 			self.sel.unregister(conn)
 		self.sel.close()
-
-	# def get_placement_screen(self):
-	# 	return self.root.ids.placement_scr.test()
 
 
 if __name__ == '__main__':

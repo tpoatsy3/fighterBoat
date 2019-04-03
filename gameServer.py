@@ -131,9 +131,9 @@ def process_read_request(manager, conn):
 		for i in range(len(loc)):
 			loc[i] = int(read_socket(sock, game.coordLen))
 
-		game.process_shot(player.get_port(), target, loc)
+		game.process_shot(player.get_port(), int(target), loc)
 
-		game.advance_turn()
+		# game.advance_turn()
 
 
 	# Remove player from a game

@@ -219,11 +219,11 @@ class Game:
 			# Set player statuses
 			player.set_status("settingBoard")
 
+
 	def process_shot(self, shooterId, targetId, loc):
 		"""Process a shot taken in a game and return outcome"""
 
 		#TODO: Add logic to check turn first
-
 		target = self.players[targetId]
 		boatId = None
 		outcome = target.recieve_shot(loc)
@@ -262,7 +262,7 @@ class Game:
 
 class Player(Transmitter):
 
-	def __init__(self, socket, port):
+	def __init__(self, socket, port:int):
 
 		Transmitter.__init__(self, socket)
 
@@ -311,7 +311,6 @@ class Player(Transmitter):
 		"""Process shot targeted at player and return the outcome"""
 
 		print("Recieve Shot: {}, port: {}".format(loc, self.id))
-		print(self.liveBoats)
 		result = self.board.check_space(*loc)
 		self.board.register_hit(*loc)
 
@@ -518,17 +517,20 @@ class Board:
 
 	def place_boat(self, id, locs):
 		for i in range(int(len(locs)/2)):
-			x = locs[i * 2] - 1
-			y = locs[i * 2 + 1] - 1
+			x = locs[i * 2]
+			y = locs[i * 2 + 1]
 			self.plot[x][y] = id
 
 	def check_space(self, x, y):
-		return self.plot[x - 1][y - 1]
+		return self.plot[x][y]
 
 	def register_hit(self, x, y):
-		loc = self.plot[x - 1][y - 1]
+		loc = self.plot[x][y]
 		if loc < 10:
-			self.plot[x - 1][y - 1] += 10
+			self.plot[x][y] += 10
+
+	def register_data(self, x, y, result):
+		self.plot[x][y] = result
 
 
 class Client(Transmitter, EventDispatcher):
@@ -538,7 +540,7 @@ class Client(Transmitter, EventDispatcher):
 		Transmitter.__init__(self, socket)
 
 		self.socket = socket
-		self.port = port
+		self.port = str(port)
 
 		self.status = None
 
@@ -559,6 +561,7 @@ class Client(Transmitter, EventDispatcher):
 		self.socket.send(msg.encode())
 		print("OUT: {}".format(msg))
 
+
 	def send_join_msg(self, opps):
 		msg = "JOIN"
 		player_count = self.str_with_buffer(int(opps) +1, 1, 0)
@@ -567,6 +570,7 @@ class Client(Transmitter, EventDispatcher):
 
 		self.send_msg(outMsg)
 
+
 	def send_setb_msg(self, boatId, coords):
 		msg = "SETB"
 		gameId = self.str_with_buffer(self.gameId, 3, 0)
@@ -574,6 +578,18 @@ class Client(Transmitter, EventDispatcher):
 		coords = self.str_with_buffer(''.join(map(str, coords)), len(coords), 0)
 
 		outMsg = msg + gameId + boatId + coords
+
+		self.send_msg(outMsg)
+
+
+	def send_shot_msg(self, target, x, y):
+		msg = "SHOT"
+		gameId = self.str_with_buffer(self.gameId, 3, 0)
+		tar_port = self.str_with_buffer(target, 5, 0)
+		x_coord = self.str_with_buffer(x, 1, 0)
+		y_coord = self.str_with_buffer(y, 1, 0)
+
+		outMsg = msg + gameId + tar_port + x_coord + y_coord
 
 		self.send_msg(outMsg)
 
@@ -587,12 +603,19 @@ class Client(Transmitter, EventDispatcher):
 
 		self.send_setb_msg(boatId, coords)
 
+	def take_shot(self, target, x, y):
+
+		self.send_shot_msg(target, x, y)
+
 
 	def get_port(self):
 		return self.port
 
 	def get_game_id(self):
 		return self.gameId
+
+	def get_opponents(self):
+		return self.opponents
 
 	def parse_game_msg(self):
 		self.gameId = self.recv_str(3)
@@ -631,6 +654,29 @@ class Client(Transmitter, EventDispatcher):
 		print("Game#: {}\nBoat Count: {}\nBoat Format: {}".format(self.gameId, boats, self.shipFormat))
 
 		return self.shipFormat
+
+
+	def parse_shot_msg(self):
+		shooter = self.recv_str(LEN_PORT)
+		target = self.recv_str(LEN_PORT)
+
+		loc = [0,0]
+
+		loc[0] = self.recv_int(self.coordLen)
+		loc[1] = self.recv_int(self.coordLen)
+
+		result = self.recv_int(1)
+
+		if result == 2:
+			boatId = self.recv_int(1)
+
+			result = result*10 + boatId
+
+		print("Models, parse_shot_msg--target: {}, self.port: {}".format(type(target), type(self.port)))
+		if target != self.port:
+			self.opponents[target].register_data(*loc, result)
+
+		return (shooter, target, loc, result)
 
 
 	# TODO: CHECK THIS THOROUGHLY
@@ -725,5 +771,15 @@ class Opponent:
 		self.port = port
 		self.name = name
 		self.board = Board(boardSize)
+
+		# Fix this so that
+		self.liveBoats = [False, True, True, True, True, True]
+
+	def register_data(self, x, y, result):
+		self.board.register_data(x, y, result)
+
+		if result > 10:
+			self.liveBoats[result%10] = False
+			print("{}'s boats: {}".format(self.name, self.liveBoats))
 
 
