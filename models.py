@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 from random import uniform, shuffle # used by Game
 from kivy.event import EventDispatcher
 from copy import deepcopy
+from socket import socket
+from typing import List
 import math
 
 MISS = 0
@@ -54,23 +58,23 @@ class GameManager:
 		self.waitingGames = [None] * (self.maxPlayers - self.minPlayers)
 		self.gameDict = {}
 
-	def join_open_game(self, desPlayers, player):
+	def join_open_game(self, desPlayers:int, player:Player):
 		""" Adds 'player' to a game with 'desPlayers' number of players
 		returns the game instance that the player was added to
 
 		Params:
-		desPlayer-int- number of desired players wanted in the game
+		desPlayer- number of desired players wanted in the game
 		player-Player- data structure associated with requesting user"""
 
 		game = None
 
-		# return game of X players
+		# return game with `desPlayers` number of players
 		if self.waitingGames[desPlayers - self.minPlayers] == None:
-			# if one doesnt exist, create and return it
+			# if one doesnt exist, create it
 			game = self.create_new_game(desPlayers)
 
 		else:
-			# Otherwise,
+			# Otherwise, find it
 			game = self.waitingGames[desPlayers - self.minPlayers]
 
 		# Add player to game
@@ -98,7 +102,7 @@ class GameManager:
 
 
 
-	def create_new_game(self, numPlayers):
+	def create_new_game(self, numPlayers:int):
 		"""Returns a new Game instance with 'numPlayers' players"""
 
 		# Create new gameId and increment for next use (gamecounter must remain a )
@@ -122,11 +126,11 @@ class GameManager:
 class Game:
 	"""Class that provides the framework and structure for play"""
 
-	def __init__(self, id, numPlayers, boardSize=8):
+	def __init__(self, id:int, numPlayers:int, boardSize=8):
 		"""Params:
-		id - integer - the unique id number for the game, registered in game manager's dictionary
-		numPlayers -  integer - total number of players at the game's start
-		boardSize - integer - number of spaces in both the x and y directions
+		id - the unique id number for the game, registered in game manager's dictionary
+		numPlayers - total number of players at the game's start
+		boardSize - number of spaces in both the x and y directions
 		 """
 
 		# Game information
@@ -151,16 +155,23 @@ class Game:
 		self.turnList = None
 
 
-	def add_player(self, player):
+	def add_player(self, player:Player):
 		"""Add player to game"""
+
+		# Add player to game's list of players
 		self.players[player.get_port()] = player
+
+		# Add player gameId
 		player.set_game_id(self.id)
+
+		# Inform the client of game assignment
 		player.send_game_notification()
 
 
-	def player_quit(self, port):
+	def player_quit(self, port:str):
 		"""Process a user's request to quit in a game"""
 
+		# Get relevant player and board
 		player = self.players.pop(port)
 		board = self.boards.pop(port)
 
@@ -172,10 +183,12 @@ class Game:
 		# Remove player from game list
 		self.turnList.remove(port)
 
+		# End the game if there is only one player left
 		if len(self.players) == 1:
 			for oppPort, oppPlayer in self.players.items():
 				oppPlayer.send_quit_notificaiton(port)
 
+		# Otherwise, inform the players and continue the game
 		else:
 			for oppPort, oppPlayer in self.players.items():
 				oppPlayer.send_quit_notificaiton(port)
@@ -220,7 +233,7 @@ class Game:
 			player.set_status("settingBoard")
 
 
-	def process_shot(self, shooterId, targetId, loc):
+	def process_shot(self, shooterId:str, targetId:str, loc:List[int]):
 		"""Process a shot taken in a game and return outcome"""
 
 		#TODO: Add logic to check turn first
@@ -236,6 +249,7 @@ class Game:
 			if self.numPlayers == 1:
 				outcome = WON
 
+		# Send shot result to all players
 		for i in self.players:
 			cur_player = self.players[i]
 			cur_player.send_shot_msg(shooterId, targetId, loc, outcome, boatId)
@@ -243,6 +257,7 @@ class Game:
 	def remove_player(self):
 		# TODO: Define from player_quit then add to process shot
 		pass
+
 
 	def advance_turn(self):
 		"""Advance turn to next active player"""
@@ -262,7 +277,7 @@ class Game:
 
 class Player(Transmitter):
 
-	def __init__(self, socket, port:int):
+	def __init__(self, socket:Socket, port:int):
 
 		Transmitter.__init__(self, socket)
 
@@ -284,7 +299,7 @@ class Player(Transmitter):
 		# Game Information
 		self.boardSize = 8
 
-	def place_boat(self, boatId, coords):
+	def place_boat(self, boatId:int, coords:List[int]):
 		""" Sets the location of one of the player's boats)
 		boatId - which boat is being set
 		coords - array of location data in [x1, y1, x2, y2, ...] format"""
@@ -546,8 +561,8 @@ class Client(Transmitter, EventDispatcher):
 
 		self.myBoard = None
 
-		self.player_count = 0
-		self.player_goal = 0
+		self.playerCount = 0
+		self.playerGoal = 0
 
 		self.gameId = None
 		self.boardSize = None
